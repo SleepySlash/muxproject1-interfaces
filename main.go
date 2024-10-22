@@ -39,12 +39,11 @@ func init(){
 func main() {
 	defer mongoClient.Disconnect(context.Background())
 
-	svc := usecase.EmployeeService{
-		EmployeeCollection: mongoClient.Database(os.Getenv("DB_NAME")).Collection(os.Getenv("COLLECTION_NAME")),
-	}
-	adm := signin.AdminService{
-		AdminCollection: mongoClient.Database(os.Getenv("DB_NAME")).Collection(os.Getenv("ADMIN_COLLECTION")),
-	}
+	// Service Variable for Employee
+	svc := usecase.NewService(mongoClient.Database(os.Getenv("DB_NAME")).Collection(os.Getenv("COLLECTION_NAME")))
+	adm := signin.NewService(mongoClient.Database(os.Getenv("DB_NAME")).Collection(os.Getenv("ADMIN_COLLECTION")))
+	
+	// Service Variable for Admin
 	r := mux.NewRouter()
 	r.HandleFunc("/health",healthHandler).Methods("GET")
 

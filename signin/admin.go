@@ -8,19 +8,31 @@ import (
 	"muxproject1/model/adminModel"
 	"net/http"
 
+	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-type AdminService struct {
+type Service interface{
+	Login(w http.ResponseWriter, r *http.Request)
+	Register(w http.ResponseWriter, r *http.Request)
+}
+type adminService struct {
 	AdminCollection *mongo.Collection
 }
 
 type Response struct{
-	Data interface{};
+	Data interface{}
 	Error string
 }
 
-func (s *AdminService) Login(w http.ResponseWriter, r *http.Request){
+func NewService(collection *mongo.Collection) Service{
+	svc:= &adminService{
+		AdminCollection: collection,
+	}
+	return svc
+}
+
+func (s *adminService) Login(w http.ResponseWriter, r *http.Request){
 	w.Header().Set("Content-Type","application/json")
 	log.Println("starting the login")
 	result :=  &Response{}
@@ -34,9 +46,7 @@ func (s *AdminService) Login(w http.ResponseWriter, r *http.Request){
 		result.Error = err.Error()
 		return 
 	}
-	adminRepo := AdminRepository.AdminRepo{
-		MongoCollection: s.AdminCollection,
-	}
+	adminRepo := AdminRepository.NewService(s.AdminCollection)
 	okay,err := adminRepo.GetAdminByPassword(admin)
 	if err !=nil{
 		w.WriteHeader(http.StatusBadRequest)
@@ -57,13 +67,12 @@ func (s *AdminService) Login(w http.ResponseWriter, r *http.Request){
 		result.Data = admin
 		w.WriteHeader(http.StatusOK)
 		log.Println("Login successful for ", admin.Name)
-	}
-	
+	}	
 }
 
 
 
-func (s *AdminService) Register(w http.ResponseWriter, r *http.Request){
+func (s *adminService) Register(w http.ResponseWriter, r *http.Request){
 	w.Header().Set("Content-Type","application/json")
 	log.Println("let's register")
 	result :=  &Response{}
@@ -77,10 +86,9 @@ func (s *AdminService) Register(w http.ResponseWriter, r *http.Request){
 		result.Error = err.Error()
 		return 
 	}
-	adminRepo := AdminRepository.AdminRepo{
-		MongoCollection: s.AdminCollection,
-	}
-	
+	adminRepo := AdminRepository.NewService(s.AdminCollection)
+	id := uuid.NewString()
+	admin.AdminID = id
 	res,err := adminRepo.CreateAdmin(admin)
 	if err!=nil{
 		w.WriteHeader(http.StatusBadRequest)

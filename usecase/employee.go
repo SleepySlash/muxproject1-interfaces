@@ -13,7 +13,14 @@ import (
 	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/mongo"
 )
-
+type Service interface{
+	CreateEmployee (w http.ResponseWriter, r *http.Request)
+	GetEmployeeByID (w http.ResponseWriter, r *http.Request)
+	GetAllEmployees (w http.ResponseWriter, r *http.Request) 
+	UpdateEmployeeByID (w http.ResponseWriter, r *http.Request)
+	DeleteEmployeeByID (w http.ResponseWriter, r *http.Request)
+	DeleteAllEmployees (w http.ResponseWriter, r *http.Request)
+}
 type EmployeeService struct {
 	EmployeeCollection *mongo.Collection
 }
@@ -21,6 +28,13 @@ type EmployeeService struct {
 type Response struct{
 	Data  interface{} `json:"data,omitempty"` 
 	Error string      `json:"error,omitempty"`
+}
+
+func NewService(client *mongo.Collection) Service{
+	svc:=&EmployeeService{
+		EmployeeCollection: client,
+	}
+	return svc
 }
 
 func (svc *EmployeeService) CreateEmployee (w http.ResponseWriter, r *http.Request) {
@@ -54,9 +68,7 @@ func (svc *EmployeeService) CreateEmployee (w http.ResponseWriter, r *http.Reque
 
 	emp.EmployeeID = uuid.New().String()
 
-	empRepo := repository.EmployeeRepo{
-		MongoCollection: svc.EmployeeCollection,
-	}
+	empRepo := repository.NewRepo(svc.EmployeeCollection)
 
 	empId,err := empRepo.InsertEmployee(&emp)
 	if err!=nil{
@@ -89,10 +101,7 @@ func (svc *EmployeeService) GetEmployeeByID (w http.ResponseWriter, r *http.Requ
 	
 	defer json.NewEncoder(w).Encode(res)
 	id := mux.Vars(r)["id"]
-	empRepo := repository.EmployeeRepo{
-		MongoCollection: svc.EmployeeCollection,
-	}
-	
+	empRepo := repository.NewRepo(svc.EmployeeCollection)
 	var emp *model.Employee
 	emp,err = empRepo.FindEmployeeByID(id)
 	if(err!=nil){
@@ -124,9 +133,9 @@ func (svc *EmployeeService) GetAllEmployees (w http.ResponseWriter, r *http.Requ
 	res := &Response{}
 	
 	defer json.NewEncoder(w).Encode(res)
-	empRepo := repository.EmployeeRepo{
-		MongoCollection: svc.EmployeeCollection,
-	}
+
+	empRepo := repository.NewRepo(svc.EmployeeCollection)
+
 	users,err:= empRepo.FindAllEmployees()
 	if err!=nil{
 		w.WriteHeader(http.StatusNotFound)
@@ -174,9 +183,8 @@ func (svc *EmployeeService) UpdateEmployeeByID (w http.ResponseWriter, r *http.R
 		return
 	}
 	user.EmployeeID = id
-	empRepo := repository.EmployeeRepo{
-		MongoCollection: svc.EmployeeCollection,
-	}
+	
+	empRepo := repository.NewRepo(svc.EmployeeCollection)
 
 	count,err:= empRepo.UpdateEmployee(id,user)
 
@@ -216,9 +224,7 @@ func (svc *EmployeeService) DeleteEmployeeByID (w http.ResponseWriter, r *http.R
 		res.Error ="invalid user id"
 		return
 	}
-	empRepo := repository.EmployeeRepo{
-		MongoCollection: svc.EmployeeCollection,
-	}
+	empRepo := repository.NewRepo(svc.EmployeeCollection)
 	count,err := empRepo.DeleteEmployeeByID(id)
 	if err!=nil{
 		w.WriteHeader(http.StatusInternalServerError)
@@ -251,9 +257,7 @@ func (svc *EmployeeService) DeleteAllEmployees (w http.ResponseWriter, r *http.R
 	res := &Response{}
 	defer json.NewEncoder(w).Encode(res)
 
-	empRepo := repository.EmployeeRepo{
-		MongoCollection: svc.EmployeeCollection,
-	}
+	empRepo := repository.NewRepo(svc.EmployeeCollection)
 	count,err := empRepo.DeleteAllEmployees()
 	if err!=nil{
 		w.WriteHeader(http.StatusInternalServerError)

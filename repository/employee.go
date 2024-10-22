@@ -8,8 +8,23 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
+type Employee interface{
+	InsertEmployee(emp *model.Employee) (interface{}, error)
+	FindEmployeeByID(emp_id string) (*model.Employee, error)
+	FindAllEmployees() ([]model.Employee, error)
+	UpdateEmployee(emp_id string, updateEmp model.Employee) (int64, error)
+	DeleteEmployeeByID(emp_id string) (int64,error)
+	DeleteAllEmployees() (int64,error)
+}
 type EmployeeRepo struct {
 	MongoCollection *mongo.Collection
+}
+
+func NewRepo(coll *mongo.Collection) Employee{
+	emp:= &EmployeeRepo{
+		MongoCollection:coll,
+	}
+	return emp
 }
 
 func (r *EmployeeRepo) InsertEmployee(emp *model.Employee) (interface{}, error) {
