@@ -1,0 +1,6 @@
+CREATE TABLE IF NOT EXISTS admin_table (
+ admin_id SERIAL PRIMARY KEY,
+ name VARCHAR(255) NOT NULL,
+ password TEXT NOT NULL,
+ created_at TIMESTAMP DEFAULT NOT NULL
+);

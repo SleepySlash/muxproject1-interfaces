@@ -8,8 +8,8 @@ import (
 	"muxproject1/model/adminModel"
 	"net/http"
 
-	"github.com/google/uuid"
-	"go.mongodb.org/mongo-driver/mongo"
+	_ "github.com/golang-migrate/migrate/v4/source/file" // Import the file source driver
+	_ "github.com/lib/pq"                                // PostgreSQL driver
 )
 
 type Service interface{
@@ -17,7 +17,7 @@ type Service interface{
 	Register(w http.ResponseWriter, r *http.Request)
 }
 type adminService struct {
-	AdminCollection *mongo.Collection
+	AdminCollection AdminRepository.AdminService
 }
 
 type Response struct{
@@ -25,11 +25,10 @@ type Response struct{
 	Error string
 }
 
-func NewService(collection *mongo.Collection) Service{
-	svc:= &adminService{
-		AdminCollection: collection,
+func NewService() Service{
+	return &adminService{
+		AdminCollection: AdminRepository.NewService(),
 	}
-	return svc
 }
 
 func (s *adminService) Login(w http.ResponseWriter, r *http.Request){
@@ -38,16 +37,23 @@ func (s *adminService) Login(w http.ResponseWriter, r *http.Request){
 	result :=  &Response{}
 	defer json.NewEncoder(w).Encode(result)
 	
-	var admin adminModel.Admin
-	err := json.NewDecoder(r.Body).Decode(&admin)
+	var adm struct{
+		Name     string `json:"name,omitempty"`
+		Password string `json:"password,omitempty"`
+	}
+	err := json.NewDecoder(r.Body).Decode(&adm)
 	if err!=nil{
 		w.WriteHeader(http.StatusBadRequest)
 		log.Println("invalid credentials", err)
 		result.Error = err.Error()
 		return 
 	}
-	adminRepo := AdminRepository.NewService(s.AdminCollection)
-	okay,err := adminRepo.GetAdminByPassword(admin)
+
+	var admin adminModel.Admin
+	admin.Name = adm.Name
+	admin.Password = adm.Password
+	
+	okay,err := s.AdminCollection.GetAdminByPassword(admin)
 	if err !=nil{
 		w.WriteHeader(http.StatusBadRequest)
 		log.Println("error logging in", err)
@@ -78,24 +84,25 @@ func (s *adminService) Register(w http.ResponseWriter, r *http.Request){
 	result :=  &Response{}
 	defer json.NewEncoder(w).Encode(result)
 	
-	var admin adminModel.Admin
-	err := json.NewDecoder(r.Body).Decode(&admin)
+	var adm struct{
+		Name     string `json:"name,omitempty"`
+		Password string `json:"password,omitempty"`
+	}
+	err := json.NewDecoder(r.Body).Decode(&adm)
+	admin := *adminModel.NewAdmin(adm.Name,adm.Password)
 	if err!=nil{
 		w.WriteHeader(http.StatusBadRequest)
 		log.Println("invalid credentials", err)
 		result.Error = err.Error()
 		return 
 	}
-	adminRepo := AdminRepository.NewService(s.AdminCollection)
-	id := uuid.NewString()
-	admin.AdminID = id
-	res,err := adminRepo.CreateAdmin(admin)
+	
+	err = s.AdminCollection.CreateAdmin(admin)
 	if err!=nil{
 		w.WriteHeader(http.StatusBadRequest)
 		log.Println("error registering", err)
 		result.Error = err.Error()
 		return 
 	}
-	result.Data=res
-
+	result.Data=admin
 }
