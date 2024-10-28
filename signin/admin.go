@@ -8,8 +8,8 @@ import (
 	"muxproject1/model/adminModel"
 	"net/http"
 
-	_ "github.com/lib/pq"                                 // PostgreSQL driver
 	_ "github.com/golang-migrate/migrate/v4/source/file" // Import the file source driver
+	_ "github.com/lib/pq"                                // PostgreSQL driver
 )
 
 type Service interface{
@@ -53,6 +53,7 @@ func (s *adminService) Login(w http.ResponseWriter, r *http.Request){
 		result.Error = err.Error()
 		return 
 	}
+	log.Printf("%v",adm)
 
 	var admin adminModel.Admin
 	admin.Name = adm.Name
@@ -65,8 +66,8 @@ func (s *adminService) Login(w http.ResponseWriter, r *http.Request){
 		result.Error = err.Error()
 		return 
 	}
-	log.Println("Admin exists, logging in...")
 	if okay {
+		log.Println("Admin exists, logging in...")
 		tokenString, err := auth.CreateToken(admin.Name)
 		if err != nil {
 		   w.WriteHeader(http.StatusInternalServerError)
@@ -77,7 +78,10 @@ func (s *adminService) Login(w http.ResponseWriter, r *http.Request){
 		w.Header().Set("Authorization", "Bearer "+tokenString)  // Corrected here
 		result.Data = admin
 		w.WriteHeader(http.StatusOK)
-		log.Println("Login successful for ", admin.Name)
+		log.Println("Login successful for ",admin.Name)
+	}else{
+		w.WriteHeader(http.StatusNotFound)
+		log.Println("user not found")
 	}
 }
 

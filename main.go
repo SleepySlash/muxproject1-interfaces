@@ -53,9 +53,9 @@ func main() {
 	r.HandleFunc("/login", adm.Login).Methods("POST")
 	r.HandleFunc("/register", adm.Register).Methods("POST")
 
-	r.HandleFunc("/employee", svc.CreateEmployee).Methods("POST")
+	r.HandleFunc("/employee/", svc.CreateEmployee).Methods("POST")
 	r.HandleFunc("/employee/{id}", svc.GetEmployeeByID).Methods("GET")
-	r.HandleFunc("/employee", svc.GetAllEmployees).Methods("GET")
+	r.HandleFunc("/employee/", svc.GetAllEmployees).Methods("GET")
 	r.HandleFunc("/employee/{id}", svc.UpdateEmployeeByID).Methods("PUT")
 	r.HandleFunc("/employee/delete/{id}", svc.DeleteEmployeeByID).Methods("DELETE")
 	r.HandleFunc("/employee/delete", svc.DeleteAllEmployees).Methods("DELETE")

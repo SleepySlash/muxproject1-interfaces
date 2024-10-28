@@ -2,7 +2,6 @@ package AdminRepository
 
 import (
 	"database/sql"
-	"fmt"
 	"log"
 	"muxproject1/model/adminModel"
 	"os"
@@ -47,10 +46,19 @@ func (r *adminRepoPostgreSql) CreateAdmin(adm adminModel.Admin) error {
 
 
 func (r *adminRepoPostgreSql) GetAdminByPassword(admin adminModel.Admin) (bool, error) {
-    rows, err := r.DB.Query("SELECT admin_id, name, password, created_at FROM admin_table WHERE password = ($1)",admin.Password)
-   if err != nil {
-     return false, err
-   }
-   fmt.Sprintf("%v", rows)
-   return true, nil
+    // Query the database for both name and password
+    rows, err := r.DB.Query("SELECT admin_id, name, password, created_at FROM admin_table WHERE name = $1 AND password = $2", admin.Name, admin.Password)
+    if err != nil {
+        return false, err
+    }
+    defer rows.Close() // Ensure the rows are closed after usage
+
+    // Check if any rows were returned
+    if rows.Next() {
+        // If a row is found, return true indicating the user exists
+        return true, nil
+    }
+
+    // No matching user found, return false
+    return false, nil
 }

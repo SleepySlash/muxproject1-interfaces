@@ -82,38 +82,48 @@ func (svc *EmployeeService) CreateEmployee (w http.ResponseWriter, r *http.Reque
 	log.Println("employee is inserted with id ",empId,emp)
 }
 
-func (svc *EmployeeService) GetEmployeeByID (w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type","application/json")
-	tokenString := r.Header.Get("Authorization")
-	if tokenString == "" {
-	  w.WriteHeader(http.StatusUnauthorized)
-	  log.Println("Unauthorized User")
-	  return
-	}
-	tokenString = tokenString[len("Bearer "):]
-	err := auth.VerifyToken(tokenString)
-	if err != nil {
-	  w.WriteHeader(http.StatusUnauthorized)
-	  fmt.Fprint(w, "Invalid token")
-	  return
-	}
-	res := &Response{}
+func (svc *EmployeeService) GetEmployeeByID(w http.ResponseWriter, r *http.Request) {
+    w.Header().Set("Content-Type", "application/json")
+	log.Println("getting the userr.....")
+    tokenString := r.Header.Get("Authorization")
+    if tokenString == "" {
+		w.WriteHeader(http.StatusUnauthorized)
+        log.Println("Unauthorized User")
+        return
+    }
+    tokenString = tokenString[len("Bearer "):]
+    err := auth.VerifyToken(tokenString)
+    if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+        fmt.Fprint(w, "Invalid token")
+        return
+    }
 	
-	defer json.NewEncoder(w).Encode(res)
+    res := &Response{}
+    defer json.NewEncoder(w).Encode(res)
+	
+    // Change this part to extract id from query parameters
 	id := mux.Vars(r)["id"]
-	empRepo := repository.NewRepo(svc.EmployeeCollection)
-	var emp *model.Employee
-	emp,err = empRepo.FindEmployeeByID(id)
-	if(err!=nil){
-		w.WriteHeader(http.StatusNotFound)
-		log.Println("error in finding the employee with id",err)
-		res.Error = err.Error()
-		return
-	}
-	log.Println("found the employee with id",id,emp)
-	res.Data=emp
-	w.WriteHeader(http.StatusOK)
+    if id == "" {
+		w.WriteHeader(http.StatusBadRequest)
+        res.Error = "Employee ID is required"
+        return
+    }
+	log.Println(id)
+	
+    empRepo := repository.NewRepo(svc.EmployeeCollection)
+    emp, err := empRepo.FindEmployeeByID(id)
+    if err != nil {
+        w.WriteHeader(http.StatusNotFound)
+        log.Println("error in finding the employee with id", err)
+        res.Error = err.Error()
+        return
+    }
+    log.Println("found the employee with id", id, emp)
+    res.Data = emp
+    w.WriteHeader(http.StatusOK)
 }
+
 
 func (svc *EmployeeService) GetAllEmployees (w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type","application/json")
