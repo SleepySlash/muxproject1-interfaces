@@ -18,6 +18,6 @@ func NewAdmin(name, password string) *Admin {
 		AdminID: uuid.NewString(),
 		Name:name,
 		Password: password,
-		CreatedAt: time.Now().UTC(),
+		CreatedAt: time.Now(),
 	}
 }

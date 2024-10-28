@@ -8,8 +8,8 @@ import (
 	"muxproject1/model/adminModel"
 	"net/http"
 
+	_ "github.com/lib/pq"                                 // PostgreSQL driver
 	_ "github.com/golang-migrate/migrate/v4/source/file" // Import the file source driver
-	_ "github.com/lib/pq"                                // PostgreSQL driver
 )
 
 type Service interface{
@@ -25,10 +25,15 @@ type Response struct{
 	Error string
 }
 
-func NewService() Service{
-	return &adminService{
-		AdminCollection: AdminRepository.NewService(),
+func NewService() (Service,error){
+	col,err:=AdminRepository.NewService()
+	if err!=nil{
+		e := &dbError{
+			err: err.Error(),
+		}
+		return nil, e
 	}
+	return &adminService{AdminCollection: col}, nil
 }
 
 func (s *adminService) Login(w http.ResponseWriter, r *http.Request){
@@ -73,7 +78,7 @@ func (s *adminService) Login(w http.ResponseWriter, r *http.Request){
 		result.Data = admin
 		w.WriteHeader(http.StatusOK)
 		log.Println("Login successful for ", admin.Name)
-	}	
+	}
 }
 
 
@@ -105,4 +110,13 @@ func (s *adminService) Register(w http.ResponseWriter, r *http.Request){
 		return 
 	}
 	result.Data=admin
+}
+
+
+type dbError struct {
+	err string
+}
+
+func (err *dbError) Error() string {
+	return err.err
 }
